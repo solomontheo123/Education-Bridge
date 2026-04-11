@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Course } from "./coursesData";
+import { Course } from "../components/coursesData";
 
 interface CourseDetailsProps {
   course: Course | null;

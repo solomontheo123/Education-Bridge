@@ -40,9 +40,15 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* Right Side - Sign In Button & Profile Dropdown */}
+        {/* Right Side - Get Started, Sign In Button & Profile Dropdown */}
         <div className="flex items-center gap-4">
-          <button className="bg-bridge-blue hover:bg-bridge-blue/90 text-white px-6 py-2 rounded-md font-medium transition-colors duration-300 hidden md:block">
+          <Link
+            href="/onboarding"
+            className="bg-bridge-blue hover:bg-bridge-blue/90 text-white px-6 py-2 rounded-md font-medium transition-colors duration-300 hidden md:block"
+          >
+            Get Started
+          </Link>
+          <button className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white px-6 py-2 rounded-md font-medium transition-colors duration-300 hidden md:block">
             Sign In
           </button>
 

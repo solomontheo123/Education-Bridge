@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Search } from "lucide-react";
-import CourseCard from "./courseCard";
-import { courses, Course } from "./coursesData";
+import CourseCard from "../components/courseCard";
+import { courses, Course } from "../components/coursesData";
 
 export default function Home() {
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
