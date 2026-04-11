@@ -1,15 +1,27 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronLeft, ChevronRight, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight, CheckCircle, RotateCcw } from "lucide-react";
 import Link from "next/link";
 
 export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(1);
-  const [formData, setFormData] = useState({
-    education: "",
-    interests: "",
-    barriers: "",
+  const [formData, setFormData] = useState(() => {
+    if (typeof window !== "undefined") {
+      const savedData = localStorage.getItem("onboardingData");
+      if (savedData) {
+        try {
+          return JSON.parse(savedData);
+        } catch (error) {
+          console.error("Error loading onboarding data:", error);
+        }
+      }
+    }
+    return {
+      education: "",
+      interests: "",
+      barriers: "",
+    };
   });
   const [errors, setErrors] = useState("");
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -32,6 +44,11 @@ export default function OnboardingPage() {
     "Language barriers",
   ];
 
+  // Hour 1: Save formData to LocalStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("onboardingData", JSON.stringify(formData));
+  }, [formData]);
+
   const validateStep = () => {
     setErrors("");
 
@@ -52,7 +69,7 @@ export default function OnboardingPage() {
 
   const handleNext = () => {
     if (validateStep()) {
-      if (currentStep < 3) {
+      if (currentStep < 4) {
         setCurrentStep(currentStep + 1);
       }
     }
@@ -66,11 +83,28 @@ export default function OnboardingPage() {
   };
 
   const handleSubmit = () => {
-    if (validateStep()) {
+    if (currentStep === 4) {
+      // Final submission - move to success
       setIsSubmitted(true);
       console.log("Form submitted:", formData);
-      // Here you would typically send the data to a backend
+    } else if (validateStep()) {
+      // Move to review step
+      setCurrentStep(4);
     }
+  };
+
+  // Hour 4.5: Reset form function
+  const handleReset = () => {
+    const resetData = {
+      education: "",
+      interests: "",
+      barriers: "",
+    };
+    setFormData(resetData);
+    localStorage.removeItem("onboardingData");
+    setCurrentStep(1);
+    setErrors("");
+    setIsSubmitted(false);
   };
 
   const handleEducationChange = (value: string) => {
@@ -95,24 +129,34 @@ export default function OnboardingPage() {
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-12 text-center">
             <CheckCircle className="w-24 h-24 text-green-500 mx-auto mb-6" />
             <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-              Welcome to Education Bridge!
+              Welcome to the Bridge!
             </h2>
             <p className="text-lg text-gray-600 dark:text-gray-300 mb-4">
-              Thank you for completing your onboarding profile.
+              Thank you for completing your profile.
             </p>
-            <p className="text-gray-500 dark:text-gray-400 mb-8">
-              We've learned that you're interested in <span className="font-semibold text-bridge-blue">{formData.interests}</span> and
-              understand that <span className="font-semibold text-bridge-blue">{formData.barriers.toLowerCase()}</span> is a barrier for you.
+            <p className="text-gray-500 dark:text-gray-400 mb-8 text-lg">
+              Based on your interest in <span className="font-bold text-bridge-blue">{formData.interests}</span>, we are preparing your personalized learning path to help you overcome <span className="font-bold text-bridge-blue">{formData.barriers.toLowerCase()}</span>.
             </p>
-            <p className="text-gray-600 dark:text-gray-300 mb-8">
-              Let's find the perfect learning path for your journey.
-            </p>
-            <Link
-              href="/"
-              className="inline-block px-8 py-3 bg-bridge-blue text-white rounded-lg hover:bg-bridge-blue/90 transition-colors duration-300 font-semibold"
-            >
-              Explore Courses
-            </Link>
+            <div className="space-y-3 mb-8">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                <span className="font-semibold">Your Education Level:</span> {formData.education}
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/"
+                className="inline-block px-8 py-3 bg-bridge-blue text-white rounded-lg hover:bg-bridge-blue/90 transition-colors duration-300 font-semibold"
+              >
+                Explore Courses
+              </Link>
+              <button
+                onClick={handleReset}
+                className="inline-flex items-center gap-2 px-8 py-3 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300 font-semibold justify-center"
+              >
+                <RotateCcw className="w-5 h-5" />
+                Start Over
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -126,16 +170,16 @@ export default function OnboardingPage() {
         <div className="mb-8">
           <div className="flex justify-between mb-3">
             <span className="text-sm font-semibold text-gray-600 dark:text-gray-300">
-              Step {currentStep} of 3
+              Step {currentStep} of 4
             </span>
             <span className="text-sm font-semibold text-bridge-blue">
-              {Math.round((currentStep / 3) * 100)}%
+              {Math.round((currentStep / 4) * 100)}%
             </span>
           </div>
           <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
             <div
               className="h-full bg-bridge-blue transition-all duration-500"
-              style={{ width: `${(currentStep / 3) * 100}%` }}
+              style={{ width: `${(currentStep / 4) * 100}%` }}
             ></div>
           </div>
         </div>
@@ -143,7 +187,7 @@ export default function OnboardingPage() {
         {/* Form Card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-12">
           <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8 text-center">
-            Let's Get to Know You
+            Let&apos;s Get to Know You
           </h2>
 
           {/* Step 1: Education */}
@@ -228,6 +272,64 @@ export default function OnboardingPage() {
             </div>
           )}
 
+          {/* Step 4: Review & Summary */}
+          {currentStep === 4 && (
+            <div className="space-y-6">
+              <div className="text-center mb-8">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  Let&apos;s Review Your Profile
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Please verify your information before we begin
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {/* Education Review */}
+                <div className="p-6 bg-gray-50 dark:bg-slate-700 rounded-lg border-l-4 border-bridge-blue">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Education Level</p>
+                  <p className="text-xl font-bold text-gray-900 dark:text-white">
+                    {formData.education}
+                  </p>
+                  <button
+                    onClick={() => setCurrentStep(1)}
+                    className="text-sm text-bridge-blue hover:text-bridge-blue/90 mt-2 font-medium"
+                  >
+                    Edit
+                  </button>
+                </div>
+
+                {/* Interests Review */}
+                <div className="p-6 bg-gray-50 dark:bg-slate-700 rounded-lg border-l-4 border-bridge-blue">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Your Interests</p>
+                  <p className="text-lg text-gray-900 dark:text-white">
+                    {formData.interests}
+                  </p>
+                  <button
+                    onClick={() => setCurrentStep(2)}
+                    className="text-sm text-bridge-blue hover:text-bridge-blue/90 mt-2 font-medium"
+                  >
+                    Edit
+                  </button>
+                </div>
+
+                {/* Barriers Review */}
+                <div className="p-6 bg-gray-50 dark:bg-slate-700 rounded-lg border-l-4 border-bridge-blue">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Main Barrier</p>
+                  <p className="text-lg text-gray-900 dark:text-white">
+                    {formData.barriers}
+                  </p>
+                  <button
+                    onClick={() => setCurrentStep(3)}
+                    className="text-sm text-bridge-blue hover:text-bridge-blue/90 mt-2 font-medium"
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Error Message */}
           {errors && (
             <div className="mt-6 p-4 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded">
@@ -250,12 +352,12 @@ export default function OnboardingPage() {
               Previous
             </button>
 
-            {currentStep < 3 ? (
+            {currentStep < 4 ? (
               <button
                 onClick={handleNext}
                 className="flex items-center gap-2 px-8 py-3 bg-bridge-blue text-white rounded-lg hover:bg-bridge-blue/90 font-semibold transition-colors duration-300"
               >
-                Next
+                {currentStep === 3 ? "Review" : "Next"}
                 <ChevronRight className="w-5 h-5" />
               </button>
             ) : (
@@ -264,7 +366,7 @@ export default function OnboardingPage() {
                 className="flex items-center gap-2 px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition-colors duration-300"
               >
                 <CheckCircle className="w-5 h-5" />
-                Complete
+                Confirm & Begin
               </button>
             )}
           </div>
