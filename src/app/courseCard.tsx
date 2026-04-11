@@ -26,7 +26,7 @@ export default function CourseCard({ course, onSelectCourse }: CourseCardProps) 
           height={120}
           className="rounded-md mb-3 w-full"
         />
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors duration-300">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-bridge-blue dark:group-hover:text-bridge-blue transition-colors duration-300">
           {course.title}
         </h2>
         <p className={`text-sm text-gray-600 dark:text-gray-300 mt-2 flex-grow transition-all duration-300 hidden ${!isExpanded && 'group-hover:block'}`}>
@@ -45,8 +45,8 @@ export default function CourseCard({ course, onSelectCourse }: CourseCardProps) 
             <div className="border-t border-gray-200 dark:border-gray-600 my-3"></div>
 
             {/* AI Syllabus Section */}
-            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border-l-4 border-blue-600">
-              <p className="text-xs font-semibold text-blue-900 dark:text-blue-300 uppercase">Coming Soon</p>
+            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border-l-4 border-bridge-blue">
+              <p className="text-xs font-semibold text-bridge-blue dark:text-bridge-blue uppercase">Coming Soon</p>
               <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
                 AI-generated syllabus data will appear here.
               </p>
@@ -58,7 +58,7 @@ export default function CourseCard({ course, onSelectCourse }: CourseCardProps) 
                 href={course.courseLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-300 font-medium text-center text-sm"
+                className="block w-full px-4 py-2 bg-bridge-blue text-white rounded-md hover:bg-bridge-blue-dark dark:bg-bridge-blue-dark dark:hover:bg-bridge-blue transition-colors duration-300 font-medium text-center text-sm"
               >
                 Enroll Now
               </a>
@@ -69,7 +69,7 @@ export default function CourseCard({ course, onSelectCourse }: CourseCardProps) 
         {/* Button - Always at the end */}
         <button
           onClick={handleLearnMore}
-          className="mt-4 max-w-xs md:w-full bg-blue-600 text-white py-2 px-6 md:px-0 rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 cursor-pointer transition-colors duration-300 font-medium w-full"
+          className="mt-4 max-w-xs md:w-full bg-bridge-blue text-white py-2 px-6 md:px-0 rounded-md hover:bg-bridge-blue-dark dark:bg-bridge-blue-dark dark:hover:bg-bridge-blue cursor-pointer transition-colors duration-300 font-medium w-full"
         >
           {isExpanded ? 'View Less' : 'Learn More'}
         </button>
