@@ -1,17 +1,79 @@
+import { useState } from "react";
 import Image from "next/image";
-import {Course} from "./coursesData";
+import { Course } from "./coursesData";
 
-export default function CourseCard(props: Course) {
-  return(
+interface CourseCardProps {
+  course: Course;
+  onSelectCourse: (course: Course) => void;
+}
+
+export default function CourseCard({ course, onSelectCourse }: CourseCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const handleLearnMore = () => {
+    setIsExpanded(!isExpanded);
+    onSelectCourse(course);
+  };
+
+  return (
     <article className="bridge-course-card">
-      <a href={props.courseLink} className="flex flex-col items-center md:items-start p-4 bg-white dark:bg-slate-900 rounded-lg shadow hover:shadow-md transition-all duration-300 w-full cursor-pointer group border border-gray-100 dark:border-gray-800 text-center md:text-left">
-        <Image src={props.imageSrc} alt={props.imageAlt} width={360} height ={120} className="rounded-md mb-3" />
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors duration-300">{props.title}</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-300 mt-2 flex-grow transition-all duration-300 hidden group-hover:block">{props.description}</p>
-        <button className="mt-4 max-w-xs md:w-full bg-blue-600 text-white py-2 px-6 md:px-0 rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 cursor-pointer transition-colors duration-300 font-medium">
-            Learn More
-          </button>
-      </a>
+      <div className={`flex flex-col items-center md:items-start p-4 bg-white dark:bg-slate-900 rounded-lg shadow hover:shadow-xl transition-all duration-300 w-full cursor-pointer group border border-gray-100 dark:border-gray-800 text-center md:text-left ${!isExpanded && 'hover:scale-105'} hover:border-blue-300 dark:hover:border-blue-600 ${isExpanded ? 'lg:hover:scale-100' : ''}`}>
+        {/* Main Card Content */}
+        <Image
+          src={course.imageSrc}
+          alt={course.imageAlt}
+          width={360}
+          height={120}
+          className="rounded-md mb-3 w-full"
+        />
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-300 transition-colors duration-300">
+          {course.title}
+        </h2>
+        <p className={`text-sm text-gray-600 dark:text-gray-300 mt-2 flex-grow transition-all duration-300 hidden ${!isExpanded && 'group-hover:block'}`}>
+          {course.description}
+        </p>
+
+        {/* Expanded Details - Show on md and smaller screens */}
+        {isExpanded && (
+          <div className="lg:hidden w-full mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+            {/* Description */}
+            <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 leading-relaxed">
+              {course.description}
+            </p>
+
+            {/* Divider */}
+            <div className="border-t border-gray-200 dark:border-gray-600 my-3"></div>
+
+            {/* AI Syllabus Section */}
+            <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border-l-4 border-blue-600">
+              <p className="text-xs font-semibold text-blue-900 dark:text-blue-300 uppercase">Coming Soon</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                AI-generated syllabus data will appear here.
+              </p>
+            </div>
+
+            {/* Enroll Button */}
+            {course.courseLink && course.courseLink !== "#" && (
+              <a
+                href={course.courseLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-300 font-medium text-center text-sm"
+              >
+                Enroll Now
+              </a>
+            )}
+          </div>
+        )}
+
+        {/* Button - Always at the end */}
+        <button
+          onClick={handleLearnMore}
+          className="mt-4 max-w-xs md:w-full bg-blue-600 text-white py-2 px-6 md:px-0 rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 cursor-pointer transition-colors duration-300 font-medium w-full"
+        >
+          {isExpanded ? 'View Less' : 'Learn More'}
+        </button>
+      </div>
     </article>
-  )
+  );
 }
