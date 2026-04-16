@@ -2,145 +2,137 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, ChevronDown, User, Mail, Settings } from "lucide-react";
+import { 
+  Menu, 
+  X, 
+  User, 
+  Home, 
+  BookOpen, 
+  Info, 
+  Mail, 
+  ChevronRight 
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useUser } from "@/context/UserContext";
 
 export default function Navbar() {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const { isComplete, isHydrated } = useUser();
 
   return (
     <nav className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
       <div className="w-full max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-        {/* Logo/Brand */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="text-2xl font-bold text-bridge-blue dark:text-bridge-blue">
+        
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setIsMenuOpen(true)}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+          >
+            <Menu className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+          </button>
+          
+          <Link href="/" className="text-2xl font-bold text-bridge-blue">
             Education Bridge
-          </div>
-        </Link>
-
-        {/* Navigation Links */}
-        <div className="hidden md:flex items-center gap-8">
-          <Link
-            href="/"
-            className="text-gray-700 dark:text-gray-300 hover:text-bridge-blue dark:hover:text-bridge-blue transition-colors duration-300 font-medium"
-          >
-            Home
-          </Link>
-          <Link
-            href="/courses"
-            className="text-gray-700 dark:text-gray-300 hover:text-bridge-blue dark:hover:text-bridge-blue transition-colors duration-300 font-medium"
-          >
-            Courses
-          </Link>
-          <Link
-            href="/about"
-            className="text-gray-700 dark:text-gray-300 hover:text-bridge-blue dark:hover:text-bridge-blue transition-colors duration-300 font-medium"
-          >
-            About
           </Link>
         </div>
 
-        {/* Right Side - Get Started, Sign In Button & Profile Dropdown */}
         <div className="flex items-center gap-4">
-          <Link
-            href="/onboarding"
-            className="bg-bridge-blue hover:bg-bridge-blue/90 text-white px-6 py-2 rounded-md font-medium transition-colors duration-300 hidden md:block"
-          >
-            Get Started
-          </Link>
-          <button className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white px-6 py-2 rounded-md font-medium transition-colors duration-300 hidden md:block">
-            Sign In
-          </button>
 
-          {/* Profile Dropdown */}
-          <div className="relative">
-            <button
-              onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors duration-300 text-gray-700 dark:text-gray-300 cursor-pointer"
+          {/* HYDRATION-SAFE BUTTON */}
+          {!isHydrated ? (
+            // Placeholder to avoid mismatch
+            <div className="hidden sm:flex w-[140px] h-[40px] bg-gray-200 dark:bg-slate-700 rounded-md animate-pulse" />
+          ) : (
+            <Link
+              href={isComplete ? "/roadmap" : "/onboarding/" }
+              className={`${
+                isComplete
+                  ? "bg-green-600 hover:bg-green-700" : "bg-bridge-blue hover:bg-bridge-blue/90" 
+              } text-white px-5 py-2 rounded-md font-medium transition-all flex items-center gap-2 hidden sm:flex`}
             >
-              <User className="w-5 h-5" />
-              <span className="hidden sm:inline font-medium">Profile</span>
-              <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {/* Profile Dropdown Menu */}
-            {isProfileMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 cursor-pointer">
-                <Link
-                  href="/contact"
-                  className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-300 border-b border-gray-200 dark:border-gray-700"
-                >
-                  <Mail className="w-4 h-4" />
-                  <span>Contact Us</span>
-                </Link>
-                <Link
-                  href="/settings"
-                  className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-300"
-                >
-                  <Settings className="w-4 h-4" />
-                  <span>Settings</span>
-                </Link>
-              </div>
-            )}
-          </div>
-
-          {/* Mobile Menu Button */}
-          <div className="md:hidden">
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="text-gray-700 dark:text-gray-300 hover:text-bridge-blue transition-colors duration-300 cursor-pointer"
-            >
-              {isMobileMenuOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
+              {isComplete ?  (
+                <>
+                  <BookOpen className="w-4 h-4" /> My Roadmap
+                </>
+              )  :(
+                "Get Started"
               )}
-            </button>
+            </Link>
+          ) }
+
+          <div className="w-10 h-10 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700">
+            <User className="w-5 h-5 text-gray-400" />
           </div>
         </div>
       </div>
 
-      {/* Mobile Menu Dropdown */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-slate-800">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col gap-4">
-            <Link
-              href="/"
-              className="text-gray-700 dark:text-gray-300 hover:text-bridge-blue dark:hover:text-bridge-blue transition-colors duration-300 font-medium py-2"
-              onClick={() => setIsMobileMenuOpen(false)}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMenuOpen(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
+            />
+
+            <motion.div
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed left-0 top-0 h-full w-72 bg-white dark:bg-slate-900 z-[70] shadow-2xl p-6 border-r border-gray-200 dark:border-gray-800"
             >
-              Home
-            </Link>
-            <Link
-              href="/courses"
-              className="text-gray-700 dark:text-gray-300 hover:text-bridge-blue dark:hover:text-bridge-blue transition-colors duration-300 font-medium py-2"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Courses
-            </Link>
-            <Link
-              href="/about"
-              className="text-gray-700 dark:text-gray-300 hover:text-bridge-blue dark:hover:text-bridge-blue transition-colors duration-300 font-medium py-2"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              About
-            </Link>
-            <Link
-              href="/onboarding"
-              className="text-gray-700 dark:text-gray-300 hover:text-bridge-blue dark:hover:text-bridge-blue transition-colors duration-300 font-medium py-2"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              Get Started
-            </Link>
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-              <button className="w-full bg-bridge-blue hover:bg-bridge-blue/90 text-white px-6 py-2 rounded-md font-medium transition-colors duration-300 cursor-pointer">
-                Sign In
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              <div className="flex justify-between items-center mb-10">
+                <span className="font-bold text-bridge-blue text-lg">
+                  Navigation
+                </span>
+                <button
+                  onClick={() => setIsMenuOpen(false)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-full"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                <SidebarLink href="/" icon={<Home className="w-5 h-5" />} label="Home" close={() => setIsMenuOpen(false)} />
+                <SidebarLink href="/courses" icon={<BookOpen className="w-5 h-5" />} label="Courses" close={() => setIsMenuOpen(false)} />
+                <SidebarLink href="/about" icon={<Info className="w-5 h-5" />} label="About Us" close={() => setIsMenuOpen(false)} />
+                <SidebarLink href="/contact" icon={<Mail className="w-5 h-5" />} label="Contact" close={() => setIsMenuOpen(false)} />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }
-        
+
+function SidebarLink({
+  href,
+  icon,
+  label,
+  close,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  close: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={close}
+      className="flex items-center justify-between p-4 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all text-gray-700 dark:text-gray-300 group"
+    >
+      <div className="flex items-center gap-4">
+        {icon}
+        <span className="font-semibold">{label}</span>
+      </div>
+      <ChevronRight className="w-4 h-4 text-gray-300 group-hover:translate-x-1 transition-transform" />
+    </Link>
+  );
+}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { UserProvider } from "@/context/UserContext";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -30,9 +31,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-screen grid grid-rows-[auto_1fr_auto]">
-        <Navbar />
-        <main>{children}</main>
-        <Footer />
+        <UserProvider>
+          <Navbar />
+            <main>{children}</main>
+          <Footer />
+        </UserProvider>
       </body>
     </html>
   );

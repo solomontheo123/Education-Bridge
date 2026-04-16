@@ -5,11 +5,13 @@ import { ChevronLeft, ChevronRight, CheckCircle, RotateCcw } from "lucide-react"
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion"; // Day 9: Animation Tools
 import { OnboardingData, onboardingSchema } from "@/lib/schema";
+import { useUser } from "@/context/UserContext";
 
 export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState("");
-  const [isSubmitted, setIsSubmitted] = useState(false);
+
+  const { onboardingComplete, setOnboardingComplete } = useUser();
 
   const [formData, setFormData] = useState<OnboardingData>(() => {
     if (typeof window !== "undefined") {
@@ -52,16 +54,17 @@ export default function OnboardingPage() {
       setErrors(`Wait! ${result.error.issues[0].message}`);
       return;
     }
-    if (currentStep === 4) setIsSubmitted(true);
+    if (currentStep === 4) setOnboardingComplete(true);
     else setCurrentStep(4);
   };
 
   const handleReset = () => {
     setFormData({ education: "", interests: "", barriers: "" });
     localStorage.removeItem("onboardingData");
+    localStorage.removeItem("onboardingComplete");
     setCurrentStep(1);
     setErrors("");
-    setIsSubmitted(false);
+    setOnboardingComplete(false);
   };
 
   const updateField = (field: keyof OnboardingData, value: string) => {
@@ -70,7 +73,7 @@ export default function OnboardingPage() {
   };
 
   // SUCCESS STATE WITH "POP" ANIMATION
-  if (isSubmitted) {
+  if (onboardingComplete) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800 flex items-top justify-center px-6 py-12">
         <motion.div 

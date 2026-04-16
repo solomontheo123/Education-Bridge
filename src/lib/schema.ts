@@ -8,4 +8,8 @@ export const onboardingSchema = z.object({
 });
 
 // The Magic Line stays exactly the same
-export type OnboardingData = z.infer<typeof onboardingSchema>;
+export interface OnboardingData {
+  education: string;
+  interests: string;
+  barriers: string;
+}
