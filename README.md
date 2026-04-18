@@ -1,36 +1,48 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# Education Bridge 🎓
 
-First, run the development server:
+**Education Bridge** is a modern, AI-ready learning platform designed to help students navigate their educational journey. It features a personalized onboarding experience that builds a custom roadmap based on individual goals and barriers.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🚀 Features
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+* **Intelligent Onboarding**: A multi-step form that captures user education level, interests, and learning barriers.
+* **Dynamic UI Logic**: The navigation intelligently shifts from a "Get Started" call-to-action to a personalized "My Roadmap" dashboard once onboarding is complete.
+* **Persistent State**: Uses React Context API and LocalStorage to ensure user data persists across browser refreshes without requiring a database (yet!).
+* **Responsive Side-Drawer**: A custom-built navigation sidebar powered by **Framer Motion** for smooth, mobile-friendly transitions.
+* **Dark Mode Support**: Fully themed for both light and dark environments using Tailwind CSS.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🛠️ Tech Stack
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+* **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
+* **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+* **Animations**: [Framer Motion](https://www.framer.com/motion/)
+* **Icons**: [Lucide React](https://lucide.dev/)
+* **State Management**: React Context API
+* **Type Safety**: TypeScript & Zod (Schema validation)
 
-## Learn More
+## 📦 Installation & Setup
 
-To learn more about Next.js, take a look at the following resources:
+1. **Clone the repository:**
+   ```bash
+   git clone [https://github.com/YOUR_USERNAME/education-bridge.git](https://github.com/YOUR_USERNAME/education-bridge.git)
+   cd education-bridge
+2. Install dependencies:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+$ Bash
+"npm install"
+To run the development server:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+$ Bash
+"npm run dev"
+To open the app:
+Navigate to http://localhost:3000 to see the project in action.
 
-## Deploy on Vercel
+🏗️ Project Structure
+/src/app: Next.js pages and layouts.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+/src/components: Reusable UI elements (Navbar, Sidebar, etc.).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+/src/context: Global state management logic.
+
+/src/lib: Validation schemas and utility functions.

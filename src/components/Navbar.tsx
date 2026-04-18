@@ -10,14 +10,14 @@ import {
   BookOpen, 
   Info, 
   Mail, 
-  ChevronRight 
+  ChevronRight,
+  Map // Added for a roadmap icon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@/context/UserContext";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
   const { isComplete, isHydrated } = useUser();
 
   return (
@@ -41,25 +41,25 @@ export default function Navbar() {
 
           {/* HYDRATION-SAFE BUTTON */}
           {!isHydrated ? (
-            // Placeholder to avoid mismatch
             <div className="hidden sm:flex w-[140px] h-[40px] bg-gray-200 dark:bg-slate-700 rounded-md animate-pulse" />
           ) : (
             <Link
-              href={isComplete ? "/roadmap" : "/onboarding/" }
+              href={isComplete ? "/roadmap" : "/onboarding"}
               className={`${
                 isComplete
-                  ? "bg-green-600 hover:bg-green-700" : "bg-bridge-blue hover:bg-bridge-blue/90" 
-              } text-white px-5 py-2 rounded-md font-medium transition-all flex items-center gap-2 hidden sm:flex`}
+                  ? "bg-blue-600 hover:bg-blue-700" // Styled as per your request
+                  : "bg-bridge-blue hover:bg-bridge-blue/90" 
+              } text-white px-5 py-2 rounded-lg font-medium transition-all flex items-center gap-2 hidden sm:flex`}
             >
-              {isComplete ?  (
+              {isComplete ? (
                 <>
                   <BookOpen className="w-4 h-4" /> My Roadmap
                 </>
-              )  :(
+              ) : (
                 "Get Started"
               )}
             </Link>
-          ) }
+          )}
 
           <div className="w-10 h-10 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700">
             <User className="w-5 h-5 text-gray-400" />
@@ -99,6 +99,12 @@ export default function Navbar() {
 
               <div className="space-y-3">
                 <SidebarLink href="/" icon={<Home className="w-5 h-5" />} label="Home" close={() => setIsMenuOpen(false)} />
+                
+                {/* Roadmap link added to Sidebar for easy access */}
+                {isComplete && (
+                  <SidebarLink href="/roadmap" icon={<Map className="w-5 h-5" />} label="My Roadmap" close={() => setIsMenuOpen(false)} />
+                )}
+
                 <SidebarLink href="/courses" icon={<BookOpen className="w-5 h-5" />} label="Courses" close={() => setIsMenuOpen(false)} />
                 <SidebarLink href="/about" icon={<Info className="w-5 h-5" />} label="About Us" close={() => setIsMenuOpen(false)} />
                 <SidebarLink href="/contact" icon={<Mail className="w-5 h-5" />} label="Contact" close={() => setIsMenuOpen(false)} />

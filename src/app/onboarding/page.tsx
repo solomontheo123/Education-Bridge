@@ -3,15 +3,18 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, CheckCircle, RotateCcw } from "lucide-react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion"; // Day 9: Animation Tools
+import { useRouter } from "next/navigation"; // FIX 1: Added Router
+import { motion, AnimatePresence } from "framer-motion";
 import { OnboardingData, onboardingSchema } from "@/lib/schema";
 import { useUser } from "@/context/UserContext";
 
 export default function OnboardingPage() {
+  const router = useRouter(); // FIX 1: Initialize Router
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState("");
 
-  const { onboardingComplete, setOnboardingComplete } = useUser();
+  // FIX 2: Added setUserData from Context
+  const { onboardingComplete, setOnboardingComplete, setUserData } = useUser();
 
   const [formData, setFormData] = useState<OnboardingData>(() => {
     if (typeof window !== "undefined") {
@@ -48,14 +51,31 @@ export default function OnboardingPage() {
   const handleNext = () => { if (validateStep() && currentStep < 4) setCurrentStep(currentStep + 1); };
   const handlePrevious = () => { if (currentStep > 1) { setCurrentStep(currentStep - 1); setErrors(""); } };
 
-  const handleSubmit = () => {
+ const handleSubmit = () => {
     const result = onboardingSchema.safeParse(formData);
     if (!result.success) {
       setErrors(`Wait! ${result.error.issues[0].message}`);
       return;
     }
-    if (currentStep === 4) setOnboardingComplete(true);
-    else setCurrentStep(4);
+    
+    if (currentStep === 4) {
+      // 1. Push data to the context
+      setUserData(formData);
+      
+      // 2. Mark as complete
+      setOnboardingComplete(true);
+      localStorage.setItem("onboardingComplete", "true");
+
+      // 3. USE THE ROUTER HERE: 
+      // This automatically moves the user to the Roadmap page
+      // after a tiny delay so they can see the success animation.
+      setTimeout(() => {
+        router.push("/roadmap");
+      }, 1500); 
+
+    } else {
+      setCurrentStep(4);
+    }
   };
 
   const handleReset = () => {
@@ -65,6 +85,8 @@ export default function OnboardingPage() {
     setCurrentStep(1);
     setErrors("");
     setOnboardingComplete(false);
+    // Also reset context
+    setUserData({ education: "", interests: "", barriers: "" });
   };
 
   const updateField = (field: keyof OnboardingData, value: string) => {
@@ -72,7 +94,6 @@ export default function OnboardingPage() {
     setErrors("");
   };
 
-  // SUCCESS STATE WITH "POP" ANIMATION
   if (onboardingComplete) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800 flex items-top justify-center px-6 py-12">
@@ -93,8 +114,13 @@ export default function OnboardingPage() {
             We are preparing your path to overcome <span className="font-bold text-blue-600">{formData.barriers.toLowerCase()}</span>.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/" className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold shadow-lg">Explore Courses</Link>
-            <button onClick={handleReset} className="inline-flex items-center gap-2 px-8 py-3 bg-gray-100 dark:bg-gray-700 rounded-lg font-semibold"><RotateCcw className="w-5 h-5" /> Start Over</button>
+            {/* FIX 4: Changed link to /roadmap */}
+            <Link href="/roadmap" className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold shadow-lg transition-all">
+              View My Roadmap
+            </Link>
+            <button onClick={handleReset} className="inline-flex items-center gap-2 px-8 py-3 bg-gray-100 dark:bg-gray-700 rounded-lg font-semibold transition-all">
+              <RotateCcw className="w-5 h-5" /> Start Over
+            </button>
           </div>
         </motion.div>
       </div>
@@ -104,7 +130,6 @@ export default function OnboardingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800 flex items-top justify-center px-6 py-12">
       <div className="max-w-2xl w-full">
-        {/* PROGRESS BAR WITH GLOW EFFECT */}
         <div className="mb-8">
           <div className="flex justify-between mb-3 text-sm font-semibold">
             <span className="text-gray-600 dark:text-gray-300">Step {currentStep} of 4</span>
@@ -126,7 +151,6 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        {/* ANIMATED FORM CARD */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-10 border border-gray-100 dark:border-slate-700 overflow-hidden">
           <AnimatePresence mode="wait">
             <motion.div
@@ -193,11 +217,11 @@ export default function OnboardingPage() {
           )}
 
           <div className="flex justify-between gap-4 mt-12">
-            <button onClick={handlePrevious} disabled={currentStep === 1} className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gray-100 dark:bg-gray-700 disabled:opacity-50"><ChevronLeft className="w-5 h-5" /> Previous</button>
+            <button onClick={handlePrevious} disabled={currentStep === 1} className="flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-gray-100 dark:bg-gray-700 disabled:opacity-50 transition-all"><ChevronLeft className="w-5 h-5" /> Previous</button>
             {currentStep < 4 ? (
-              <button onClick={handleNext} className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold shadow-lg shadow-blue-100">{currentStep === 3 ? "Review" : "Next"} <ChevronRight className="w-5 h-5" /></button>
+              <button onClick={handleNext} className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-semibold shadow-lg transition-all">Next <ChevronRight className="w-5 h-5" /></button>
             ) : (
-              <button onClick={handleSubmit} className="flex items-center gap-2 px-8 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 font-semibold shadow-lg shadow-green-100"><CheckCircle className="w-5 h-5" /> Confirm & Begin</button>
+              <button onClick={handleSubmit} className="flex items-center gap-2 px-8 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 font-semibold shadow-lg transition-all"><CheckCircle className="w-5 h-5" /> Confirm & Begin</button>
             )}
           </div>
         </div>

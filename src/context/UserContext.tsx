@@ -60,10 +60,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("onboardingComplete", JSON.stringify(onboardingComplete));
     }
   }, [userData, isHydrated, onboardingComplete]);
-   const isComplete = 
-    userData.education.trim() !== "" &&
-    userData.interests.trim() !== "" &&
-    userData.barriers.trim() !== "";
+   const isComplete = Boolean(
+  userData.education?.trim() && 
+  userData.interests?.trim() && 
+  userData.barriers?.trim()
+);
 
   return (
     <UserContext.Provider
