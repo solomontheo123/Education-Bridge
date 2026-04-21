@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useUser } from "@/context/UserContext";
 import { getRoadmap } from "@/lib/api";
 import { motion } from "framer-motion";
-import { CheckCircle, Clock, BookOpen } from "lucide-react";
+import { Clock, BookOpen } from "lucide-react";
 
 export default function RoadmapPage() {
   const { userData } = useUser();
@@ -38,7 +38,10 @@ export default function RoadmapPage() {
     <div className="max-w-4xl mx-auto p-6">
       <header className="mb-10 text-center">
         <h1 className="text-4xl font-bold mb-2">My Learning Roadmap</h1>
-        <p className="text-gray-500">Tailored for your interest in {userData.interests}</p>
+        <p className="text-gray-500">
+          Serves as a step by step guide,which will you excel in {userData.interests}.Help you overcome {userData.barriers},
+          in a way that suits your current {userData.education} level. Wish you an un interrupted learning experience.
+        </p>
       </header>
 
       <div className="space-y-6">

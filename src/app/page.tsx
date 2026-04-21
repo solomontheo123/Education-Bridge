@@ -25,8 +25,9 @@ export default function Home() {
   return (
     <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-slate-900">
       <main className="w-full max-w-7xl px-6 py-12">
-        <h1 className="text-5xl font-bold text-center sm:text-left mb-8">Welcome to Our Learning Platform</h1>
-        
+
+        <h1 className="text-3xl font-bold text-center sm:text-center mb-8">Welcome!! to your very own <i>Education Bridge</i>.<p className= "text-lg text-gray-600 dark:text-gray-400 py-4">We offer the best form of education you would wish for,and in the right <i>Environment.</i> Begin you journey by clicking on the  Get Started above.</p></h1>
+
         {/* Search Bar */}
         <div className="mb-12 w-full">
           <div className="relative w-full">
@@ -59,10 +60,10 @@ export default function Home() {
                 <div className="text-center">
                   <Search className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    No courses found
+                    No courses found!
                   </h2>
                   <p className="text-gray-600 dark:text-gray-400">
-                    No courses found for {searchQuery}. Try another path.
+                    No courses found for {searchQuery}. Try searching for other available courses.
                   </p>
                   <button
                     onClick={() => setSearchQuery("")}
@@ -107,7 +108,7 @@ export default function Home() {
                 <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border-l-4 border-blue-600">
                   <p className="text-xs font-semibold text-blue-900 dark:text-blue-300 uppercase">Coming Soon</p>
                   <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                    AI-generated syllabus data will appear here.
+                    We will notify you,when it is ready.
                   </p>
                 </div>
 
