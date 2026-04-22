@@ -19,6 +19,56 @@
   }
 }
 
+@media print {
+  @page {
+    margin: 0;
+    size: auto;
+  }
+
+  /* 1. Reset Body to allow natural height expansion */
+  body {
+    display: block !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    padding: 1cm !important;
+  }
+
+  /* 2. Target your roadmap container */
+  .max-w-4xl, main, .roadmap-container {
+    display: block !important; /* Force it out of Flex/Grid */
+    height: auto !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+
+  /* 3. This is the FIX for the 'Tiny Header' look */
+  /* We force each step to have a minimum height and large margins */
+  .relative.flex { 
+    display: block !important; /* Change from flex to block for paper */
+    min-height: 250px !important; /* Forces each step to take up vertical space */
+    margin-bottom: 50px !important; 
+    page-break-inside: avoid !important;
+  }
+
+  /* 4. Scale up the Typography */
+  h1 { 
+    font-size: 40pt !important; 
+    margin-bottom: 40pt !important;
+    padding-top: 1cm !important;
+  }
+
+  p { 
+    font-size: 18pt !important; /* Large, readable text */
+    line-height: 1.8 !important; 
+  }
+
+  /* 5. Hide the browser headers/footers definitively */
+  header, footer, nav, .no-print {
+    display: none !important;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
