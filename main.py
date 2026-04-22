@@ -66,3 +66,36 @@ async def generate_roadmap(data: UserOnboarding):
             "status": "Error", 
             "custom_roadmap": [f"Technical Error: {str(e)}"]
         }
+
+
+class ChatRequest(BaseModel):
+    message: str
+    context: dict  # This will hold the user's interests/education
+    history: list = []  # To remember previous questions
+
+
+@app.post("/chat")
+async def chat_with_mentor(request: ChatRequest):
+    try:
+        # Create a "System Prompt" that tells the AI to act as a mentor
+        system_prompt = f"""
+        You are an expert academic mentor. The user is interested in {request.context.get('interests')}.
+        Their background is {request.context.get('education')}.
+        Provide encouraging, specific, and actionable advice based on their roadmap.
+        Help them overcome: {request.context.get('barriers')}
+        Be conversational, supportive, and provide actionable next steps.
+        """
+
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                *request.history,  # Include past messages
+                {"role": "user", "content": request.message}
+            ],
+            max_tokens=500,
+            temperature=0.7
+        )
+        return {"reply": response.choices[0].message.content}
+    except Exception as e:
+        return {"error": str(e)}
