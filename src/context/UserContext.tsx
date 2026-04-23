@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, startTransition } from "react";
 import { OnboardingData } from "@/lib/schema";
+import { supabase } from "@/lib/supabaseClient";
+import { User } from "@supabase/supabase-js";
 
 interface UserContextType {
   userData: OnboardingData;
@@ -10,6 +12,8 @@ interface UserContextType {
   isHydrated: boolean;
   onboardingComplete: boolean;
   setOnboardingComplete: (complete: boolean) => void;
+  user: User | null;
+  loading: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -24,6 +28,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const saved = localStorage.getItem("onboardingData");
@@ -54,6 +60,26 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   }, []);
 
+  // Auth state listener
+  useEffect(() => {
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      setLoading(false);
+    };
+
+    getInitialSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   useEffect(() => {
     if (isHydrated) {
       localStorage.setItem("onboardingData", JSON.stringify(userData));
@@ -68,7 +94,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <UserContext.Provider
-      value={{ userData, setUserData, isComplete, isHydrated, onboardingComplete, setOnboardingComplete }}
+      value={{ userData, setUserData, isComplete, isHydrated, onboardingComplete, setOnboardingComplete, user, loading }}
     >
       {children}
     </UserContext.Provider>

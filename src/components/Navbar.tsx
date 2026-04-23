@@ -11,14 +11,21 @@ import {
   Info, 
   Mail, 
   ChevronRight,
-  Map // Added for a roadmap icon
+  Map,
+  LogIn,
+  LogOut
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "@/context/UserContext";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { isComplete, isHydrated } = useUser();
+  const { isComplete, isHydrated, user, loading } = useUser();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
@@ -64,6 +71,27 @@ export default function Navbar() {
           <div className="w-10 h-10 bg-gray-100 dark:bg-slate-800 rounded-full flex items-center justify-center border border-gray-200 dark:border-gray-700">
             <User className="w-5 h-5 text-gray-400" />
           </div>
+
+          {/* Auth Button */}
+          {!loading && (
+            user ? (
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                <LogIn className="w-4 h-4" />
+                <span className="hidden sm:inline">Login</span>
+              </Link>
+            )
+          )}
         </div>
       </div>
 
@@ -108,6 +136,29 @@ export default function Navbar() {
                 <SidebarLink href="/courses" icon={<BookOpen className="w-5 h-5" />} label="Courses" close={() => setIsMenuOpen(false)} />
                 <SidebarLink href="/about" icon={<Info className="w-5 h-5" />} label="About Us" close={() => setIsMenuOpen(false)} />
                 <SidebarLink href="/contact" icon={<Mail className="w-5 h-5" />} label="Contact" close={() => setIsMenuOpen(false)} />
+
+                {/* Auth Links */}
+                <div className="border-t border-gray-200 dark:border-gray-700 pt-3 mt-6">
+                  {!loading && (
+                    user ? (
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          setIsMenuOpen(false);
+                        }}
+                        className="flex items-center justify-between w-full p-4 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all text-red-600 dark:text-red-400 group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <LogOut className="w-5 h-5" />
+                          <span className="font-semibold">Logout</span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-red-300 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    ) : (
+                      <SidebarLink href="/login" icon={<LogIn className="w-5 h-5" />} label="Login" close={() => setIsMenuOpen(false)} />
+                    )
+                  )}
+                </div>
               </div>
             </motion.div>
           </>

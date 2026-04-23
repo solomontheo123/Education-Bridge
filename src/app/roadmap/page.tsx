@@ -6,6 +6,8 @@ import { getRoadmap } from "@/lib/api";
 import { motion } from "framer-motion";
 import { Clock, BookOpen, Download, ArrowLeft, Send, MessageSquare } from "lucide-react";
 import Link from "next/link";
+import { supabase } from '@/lib/supabaseClient';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   role: "user" | "assistant";
@@ -15,7 +17,7 @@ interface Message {
 
 export default function RoadmapPage() {
   // ============ STATE MANAGEMENT ============
-  const { userData } = useUser();
+  const { userData, user } = useUser();
   const [roadmap, setRoadmap] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [chatInput, setChatInput] = useState("");
@@ -27,6 +29,28 @@ export default function RoadmapPage() {
   // ============ REFS ============
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // ============ SAVE ROADMAP FUNCTION ============
+  const saveRoadmapToDB = React.useCallback(async (roadmapData: string[]) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (user) {
+      const { error } = await supabase
+        .from('roadmaps')
+        .insert([
+          { 
+            user_id: user.id,
+            interests: userData.interests,
+            education: userData.education,
+            barriers: userData.barriers,
+            custom_roadmap: roadmapData 
+          }
+        ]);
+
+      if (error) console.error("Error saving:", error.message);
+      else console.log("Roadmap saved to profile!");
+    }
+  }, [userData.interests, userData.education, userData.barriers]);
+
   // ============ EFFECTS ============
 
   // Load roadmap data
@@ -34,9 +58,33 @@ export default function RoadmapPage() {
     async function fetchAIResult() {
       if (userData.interests) {
         try {
+          // First, try to load saved roadmap from DB if user is logged in
+          if (user) {
+            const { data: savedRoadmap, error } = await supabase
+              .from('roadmaps')
+              .select('custom_roadmap')
+              .eq('user_id', user.id)
+              .eq('interests', userData.interests)
+              .eq('education', userData.education)
+              .eq('barriers', userData.barriers)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+
+            if (!error && savedRoadmap?.custom_roadmap) {
+              setRoadmap(savedRoadmap.custom_roadmap);
+              setLoading(false);
+              return;
+            }
+          }
+
+          // If no saved roadmap, generate new one
           const result = await getRoadmap(userData);
           if (result && result.custom_roadmap) {
             setRoadmap(result.custom_roadmap);
+            if (user) {
+              saveRoadmapToDB(result.custom_roadmap);
+            }
           }
         } catch (error) {
           console.error("Failed to load roadmap:", error);
@@ -45,7 +93,7 @@ export default function RoadmapPage() {
       setLoading(false);
     }
     fetchAIResult();
-  }, [userData]);
+  },[userData, saveRoadmapToDB, user]);
 
   // Load chat history from localStorage
   useEffect(() => {
@@ -105,7 +153,7 @@ export default function RoadmapPage() {
         content: msg.content
       }));
 
-      const response = await fetch("http://127.0.0.1:8000/chat", {
+      const response = await fetch("https://127.0.0.1:8000/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -217,6 +265,19 @@ export default function RoadmapPage() {
             <span className="font-bold text-blue-600"> {userData.education}</span> level. 
             Designed to help you overcome: <span className="italic text-blue-600">{userData.barriers}</span>
           </p>
+
+          {/* Logout Button */}
+          <div className="mt-6">
+            <button 
+              onClick={async () => {
+                await supabase.auth.signOut();
+                window.location.href = "/login";
+              }}
+              className="bg-red-500 text-white px-4 py-2 rounded-lg no-print hover:bg-red-600 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
         </motion.div>
       </header>
 
@@ -379,7 +440,13 @@ export default function RoadmapPage() {
                           : "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-bl-none"
                       }`}
                     >
-                      <p className="text-sm leading-relaxed">{msg.content}</p>
+                      {msg.role === "user" ? (
+                        <p className="text-sm leading-relaxed">{msg.content}</p>
+                      ) : (
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      )}
                       {msg.timestamp && (
                         <p className="text-xs opacity-70 mt-1">
                           {msg.timestamp}
