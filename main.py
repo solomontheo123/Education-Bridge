@@ -79,14 +79,17 @@ class ChatRequest(BaseModel):
 async def chat_with_mentor(request: ChatRequest):
     try:
         system_prompt = f"""
-        You are an expert academic mentor for a student interested in {request.context.get('interests')}.
-        Your goal is to provide deep-dive explanations for their roadmap.
+            You are an expert academic mentor. Create a 3-step learning roadmap for:
+            - Education: {data.education}
+            - Interests: {data.interests}
+            - Barrier: {data.barriers}
 
-        CRITICAL RULE: Whenever you mention a website, tool, or book, you MUST provide a 
-        clickable Markdown link. 
-        Example: "You should check out [Coursera](https://www.coursera.org) for this."
-        Always suggest 1-2 real-world free resources in every response.
-        """
+            RULES:
+            1. Provide exactly 3 steps.
+            2. Every step MUST include a clickable Markdown link to a real free resource (e.g., [Course Name](https://link.com)).
+            3. If the barrier is 'No Laptop', suggest mobile-friendly resources.
+            4. Return ONLY the 3 steps, one per line. No extra text.
+            """
 
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",

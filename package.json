@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "backend": "./venv/Scripts/python -m uvicorn main:app --reload",
+    "backend": "venv\\Scripts\\python -m uvicorn main:app --reload",
     "both": "concurrently \"npm run dev\" \"npm run backend\"",
     "build": "next build",
     "start": "next start",
@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
