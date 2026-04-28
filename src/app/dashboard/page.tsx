@@ -3,8 +3,16 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import ReactMarkdown from 'react-markdown';
 
+interface Roadmap {
+  id: number;
+  interests: string;
+  custom_roadmap: string[];
+  created_at: string;
+  user_id: string;
+}
+
 export default function Dashboard() {
-  const [roadmaps, setRoadmaps] = useState([]);
+  const [roadmaps, setRoadmaps] = useState<Roadmap[]>([]);
   const [loading, setLoading] = useState(true);
   const fetched = useRef(false); // 👈 This prevents the double-call
 
@@ -46,12 +54,12 @@ export default function Dashboard() {
       
       {roadmaps.length === 0 ? (
         <div className="text-center p-20 border-2 border-dashed rounded-3xl">
-          <p className="text-gray-500">Your library is empty. Let's build your first roadmap!</p>
+          <p className="text-gray-500">Your library is empty. Let&apos;s build your first roadmap!</p>
           <a href="/roadmap" className="mt-4 inline-block text-blue-600 font-bold underline">Generate Now</a>
         </div>
       ) : (
         <div className="grid gap-8">
-          {roadmaps.map((rm: any) => (
+          {roadmaps.map((rm: Roadmap) => (
             <div key={rm.id} className="group p-8 border border-slate-200 rounded-3xl bg-white shadow-sm hover:shadow-xl transition-all duration-300">
               <div className="flex justify-between items-start mb-6">
                 <h2 className="text-2xl font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
