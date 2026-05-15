@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { useUser } from "@/context/UserContext";
-import { getRoadmap } from "@/lib/api";
+import { getCurriculum } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
-import { Clock, BookOpen, Download, ArrowLeft, Send, MessageSquare } from "lucide-react";
+import { Clock, BookOpen, Download, ArrowLeft, Send, MessageSquare, GraduationCap, Calendar } from "lucide-react";
 import Link from "next/link";
-import { supabase } from '@/lib/supabaseClient';
+import { saveRoadmap } from "@/lib/api";
 import ReactMarkdown from 'react-markdown';
 
 interface Message {
@@ -15,11 +16,28 @@ interface Message {
   timestamp?: string;
 }
 
-export default function RoadmapPage() {
+interface YearData {
+  title: string;
+  description: string;
+  courses: Array<{
+    name: string;
+    topics: string[];
+  }>;
+}
+
+interface CurriculumData {
+  [key: string]: YearData;
+}
+
+export default function CurriculumPage() {
+  // ============ AUTHENTICATION ============
+  useAuth();
+
   // ============ STATE MANAGEMENT ============
-  const { userData, user } = useUser();
-  const [roadmap, setRoadmap] = useState<string[]>([]);
+  const { userData, userEmail } = useUser();
+  const [curriculum, setCurriculum] = useState<CurriculumData>({});
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -29,75 +47,68 @@ export default function RoadmapPage() {
   // ============ REFS ============
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // ============ SAVE ROADMAP FUNCTION ============
-  const saveRoadmapToDB = React.useCallback(async (roadmapData: string[]) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-      const { error } = await supabase
-        .from('roadmaps')
-        .insert([
-          { 
-            user_id: user.id,
-            interests: userData.interests,
-            education: userData.education,
-            barriers: userData.barriers,
-            custom_roadmap: roadmapData 
-          }
-        ]);
+  // ============ SAVE CURRICULUM FUNCTION ============
+  const saveCurriculumToDB = React.useCallback(async (curriculumData: CurriculumData) => {
+    if (!userEmail) return;
 
-      if (error) console.error("Error saving:", error.message);
-      else console.log("Roadmap saved to profile!");
+    try {
+      // Convert curriculum to array format for saving
+      const curriculumArray = Object.entries(curriculumData).map(([year, data]) =>
+        `${year.toUpperCase()}: ${data.title} - ${data.description}\nCourses: ${data.courses.map(c => c.name).join(', ')}`
+      );
+
+      await saveRoadmap({
+        education: userData.education,
+        interests: userData.interests,
+        barriers: userData.barriers,
+        custom_roadmap: curriculumArray,
+      });
+      console.log("Curriculum saved successfully.");
+    } catch (error) {
+      console.error("Error saving curriculum:", error);
     }
-  }, [userData.interests, userData.education, userData.barriers]);
+  }, [userData, userEmail]);
 
   // ============ EFFECTS ============
 
-  // Load roadmap data
+  // Load curriculum data
   useEffect(() => {
-    async function fetchAIResult() {
+    async function fetchCurriculum() {
       if (userData.interests) {
         try {
-          // First, try to load saved roadmap from DB if user is logged in
-          if (user) {
-            const { data: savedRoadmap, error } = await supabase
-              .from('roadmaps')
-              .select('custom_roadmap')
-              .eq('user_id', user.id)
-              .eq('interests', userData.interests)
-              .eq('education', userData.education)
-              .eq('barriers', userData.barriers)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .single();
-
-            if (!error && savedRoadmap?.custom_roadmap) {
-              setRoadmap(savedRoadmap.custom_roadmap);
-              setLoading(false);
-              return;
-            }
+          setFetchError(null);
+          setLoading(true);
+          const result = await getCurriculum(userData);
+          if (result?.status === "error") {
+            setFetchError(result.message || "Unable to generate curriculum.");
           }
 
-          // If no saved roadmap, generate new one
-          const result = await getRoadmap(userData);
-          if (result && result.custom_roadmap) {
-            setRoadmap(result.custom_roadmap);
-            if (user) {
-              saveRoadmapToDB(result.custom_roadmap);
+          if (result && result.curriculum) {
+            setCurriculum(result.curriculum);
+
+            if (userEmail) {
+              await saveCurriculumToDB(result.curriculum);
             }
           }
         } catch (error) {
-          console.error("Failed to load roadmap:", error);
+          const message = error instanceof Error ? error.message : String(error);
+          console.error("Failed to load curriculum:", error);
+          setFetchError(
+            message.includes("Failed to fetch") || message.includes("Connection refused")
+              ? "Cannot connect to the curriculum backend on port 9000. Start the Python backend with `npm run backend` or `uvicorn main:app --reload` and refresh."
+              : message
+          );
+        } finally {
+          setLoading(false);
         }
       }
-      setLoading(false);
     }
-    fetchAIResult();
-  },[userData, saveRoadmapToDB, user]);
+    fetchCurriculum();
+  }, [userData, saveCurriculumToDB, userEmail]);
 
   // Load chat history from localStorage
   useEffect(() => {
-    const savedMessages = localStorage.getItem('roadmap-chat');
+    const savedMessages = localStorage.getItem('curriculum-chat');
     if (savedMessages) {
       try {
         setMessages(JSON.parse(savedMessages));
@@ -110,7 +121,7 @@ export default function RoadmapPage() {
   // Save chat history to localStorage
   useEffect(() => {
     if (messages.length > 0) {
-      localStorage.setItem('roadmap-chat', JSON.stringify(messages));
+      localStorage.setItem('curriculum-chat', JSON.stringify(messages));
     }
   }, [messages]);
 
@@ -126,7 +137,7 @@ export default function RoadmapPage() {
   // ============ CHAT HANDLER ============
   const handleSendMessage = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    
+
     if (!chatInput.trim() || isChatLoading) return;
 
     // Rate limiting (1 second cooldown)
@@ -153,7 +164,7 @@ export default function RoadmapPage() {
         content: msg.content
       }));
 
-      const response = await fetch("https://127.0.0.1:8000/chat", {
+      const response = await fetch("http://127.0.0.1:9000/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -204,13 +215,30 @@ export default function RoadmapPage() {
   };
 
   // ============ ERROR STATE ============
-  if (!loading && (!userData.interests || roadmap.length === 0)) {
+  if (!loading && fetchError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-xl rounded-3xl border border-red-200 bg-red-50 p-8 dark:border-red-700 dark:bg-red-900/50">
+          <h2 className="text-2xl font-bold mb-4 text-red-700 dark:text-red-200">Could not generate your curriculum</h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-6">{fetchError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!loading && (!userData.interests || Object.keys(curriculum).length === 0)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center bg-gray-50 dark:bg-gray-900">
         <div className="max-w-md">
-          <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">No Roadmap Found</h2>
+          <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">No Curriculum Found</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Please complete the onboarding process to generate your personalized learning path.
+            Please complete the onboarding process to generate your personalized curriculum.
           </p>
           <Link
             href="/onboarding"
@@ -229,13 +257,13 @@ export default function RoadmapPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <motion.div 
+          <motion.div
             animate={{ rotate: 360 }}
             transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
             className="h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full mb-4 mx-auto"
           />
           <p className="text-gray-600 dark:text-gray-300 animate-pulse">
-            AI Mentor is crafting your personalized roadmap...
+            Bridge AI is crafting your personalized curriculum...
           </p>
         </div>
       </div>
@@ -244,8 +272,8 @@ export default function RoadmapPage() {
 
   // ============ MAIN RENDER ============
   return (
-    <div className="max-w-4xl mx-auto p-6 pb-24 bg-white dark:bg-gray-900 rounded-3xl shadow-lg mt-5">
-      {/* HEADER - Personalized Learning */}
+    <div className="max-w-6xl mx-auto p-6 pb-24 bg-white dark:bg-gray-900 rounded-3xl shadow-lg mt-5">
+      {/* HEADER - Personalized Curriculum */}
       <header className="mb-12 text-center pt-8">
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -253,24 +281,25 @@ export default function RoadmapPage() {
           transition={{ duration: 0.6 }}
         >
           <div className="mb-4 inline-block px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full text-sm font-semibold">
-            📚 {userData.education} • Learning {userData.interests}
+            🎓 {userData.education} • Learning {userData.interests}
           </div>
-          
+
           <h1 className="text-4xl md:text-5xl font-extrabold mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            Your Personal Growth Path
+            Your 5-Year Curriculum
           </h1>
-          
+
           <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto leading-relaxed text-lg">
-            Customized roadmap for <span className="font-bold text-blue-600">{userData.interests}</span> at 
-            <span className="font-bold text-blue-600"> {userData.education}</span> level. 
+            Comprehensive curriculum for <span className="font-bold text-blue-600">{userData.interests}</span> at
+            <span className="font-bold text-blue-600"> {userData.education}</span> level.
             Designed to help you overcome: <span className="italic text-blue-600">{userData.barriers}</span>
           </p>
 
           {/* Logout Button */}
           <div className="mt-6">
-            <button 
-              onClick={async () => {
-                await supabase.auth.signOut();
+            <button
+              onClick={() => {
+                localStorage.removeItem("eduBridgeToken");
+                localStorage.removeItem("eduBridgeEmail");
                 window.location.href = "/login";
               }}
               className="bg-red-500 text-white px-4 py-2 rounded-lg no-print hover:bg-red-600 transition-colors"
@@ -282,30 +311,30 @@ export default function RoadmapPage() {
       </header>
 
       {/* CONTEXTUAL LEARNING INFO */}
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.3 }}
         className="mb-12 p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl border border-blue-200 dark:border-blue-800"
       >
         <h3 className="font-bold text-blue-900 dark:text-blue-100 mb-3 flex items-center gap-2">
-          💡 Personalized Just for You
+          🤖 Generated by Bridge AI
         </h3>
         <p className="text-gray-700 dark:text-gray-300">
-          Your AI remembers: <strong>{userData.education}</strong> background, 
-          <strong> {userData.interests}</strong> focus, and overcoming 
-          <strong> {userData.barriers}</strong>. Use the chat bubble (bottom right) for personalized guidance! 🤖
+          Your AI remembers: <strong>{userData.education}</strong> background,
+          <strong> {userData.interests}</strong> focus, and overcoming
+          <strong> {userData.barriers}</strong>. Use the chat bubble (bottom right) for personalized guidance! 🎓
         </p>
       </motion.div>
 
-      {/* ROADMAP TIMELINE */}
-      <div className="relative space-y-12 mb-16">
+      {/* CURRICULUM TIMELINE */}
+      <div className="relative space-y-8 mb-16">
         {/* Timeline Line */}
-        <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 w-0.5 h-full bg-gradient-to-b from-blue-300 via-indigo-300 to-purple-300 dark:from-blue-600 dark:via-indigo-600 dark:to-purple-600"></div>
+        <div className="hidden md:block absolute left-1/2 transform -translate-x-1/2 w-1 h-full bg-gradient-to-b from-blue-300 via-indigo-300 to-purple-300 dark:from-blue-600 dark:via-indigo-600 dark:to-purple-600 rounded-full"></div>
 
-        {roadmap.map((step, index) => (
+        {Object.entries(curriculum).map(([yearKey, yearData], index) => (
           <motion.div
-            key={index}
+            key={yearKey}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -316,33 +345,121 @@ export default function RoadmapPage() {
           >
             {/* Timeline Dot */}
             <div className="relative z-10 flex items-center justify-center">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg flex items-center justify-center font-bold text-lg border-4 border-white dark:border-gray-900">
-                {index + 1}
+              <div className={`w-16 h-16 rounded-full shadow-lg flex items-center justify-center font-bold text-xl border-4 border-white dark:border-gray-900 ${
+                index === 0
+                  ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white'
+                  : 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white'
+              }`}>
+                <GraduationCap size={24} />
+              </div>
+              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-white dark:bg-gray-900 px-2 py-1 rounded-full text-xs font-semibold text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                Year {index + 1}
               </div>
             </div>
 
-            {/* Step Card */}
-            <div className={`md:w-[calc(50%-1rem)] ${
+            {/* Year Card */}
+            <div className={`md:w-[calc(50%-2rem)] ${
               index % 2 === 0 ? "md:mr-auto md:text-right md:pr-8" : "md:ml-auto md:text-left md:pl-8"
             }`}>
-              <motion.div 
+              <motion.div
                 whileHover={{ scale: 1.02, y: -5 }}
                 transition={{ duration: 0.2 }}
-                className="p-6 bg-white dark:bg-gray-800 rounded-2xl border-2 border-gray-200 dark:border-gray-700 shadow-md hover:shadow-xl transition-all duration-300"
+                className={`p-8 rounded-2xl border-2 shadow-md hover:shadow-xl transition-all duration-300 ${
+                  index === 0
+                    ? 'bg-white dark:bg-gray-800 border-green-200 dark:border-green-700'
+                    : 'bg-white dark:bg-gray-800 border-blue-200 dark:border-blue-700'
+                }`}
               >
-                <p className="text-gray-800 dark:text-gray-100 leading-relaxed mb-4 text-base">
-                  {step}
+                {/* Year Header */}
+                <div className={`flex items-center gap-3 mb-4 ${
+                  index % 2 === 0 ? "md:justify-end" : "md:justify-start"
+                }`}>
+                  <Calendar className={`w-6 h-6 ${
+                    index === 0 ? 'text-green-600' : 'text-blue-600'
+                  }`} />
+                  <h3 className={`text-xl font-bold ${
+                    index === 0 ? 'text-green-700 dark:text-green-300' : 'text-blue-700 dark:text-blue-300'
+                  }`}>
+                    {yearData.title}
+                    {index === 0 && (
+                      <span className="ml-2 text-sm font-normal text-green-600">
+                        (Current Year)
+                      </span>
+                    )}
+                  </h3>
+                </div>
+
+                {/* Year Description */}
+                <p className="text-gray-800 dark:text-gray-100 leading-relaxed mb-6 text-base">
+                  {yearData.description}
                 </p>
 
-                {/* Step Meta Tags */}
+                {/* Courses */}
+                <div className="mb-6">
+                  <h4 className={`font-semibold mb-3 flex items-center gap-2 ${
+                    index % 2 === 0 ? "md:justify-end" : "md:justify-start"
+                  }`}>
+                    <BookOpen size={16} className="text-blue-600" />
+                    Courses ({yearData.courses?.length || 0})
+                  </h4>
+                  <div className={`space-y-4 ${
+                    index % 2 === 0 ? "md:text-right" : "md:text-left"
+                  }`}>
+                    {yearData.courses?.map((course, courseIndex) => (
+                      <div
+                        key={courseIndex}
+                        className={`p-4 rounded-lg border ${
+                          index === 0
+                            ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                            : 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800'
+                        }`}
+                      >
+                        <h5 className={`font-semibold mb-2 ${
+                          index === 0 ? 'text-green-800 dark:text-green-200' : 'text-blue-800 dark:text-blue-200'
+                        }`}>
+                          {course.name}
+                        </h5>
+                        <div className="mb-2">
+                          <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Topics:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {course.topics.map((topic, topicIndex) => (
+                              <span
+                                key={topicIndex}
+                                className={`inline-block px-2 py-1 text-xs rounded-full ${
+                                  index === 0
+                                    ? 'bg-green-100 dark:bg-green-800 text-green-700 dark:text-green-300'
+                                    : 'bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300'
+                                }`}
+                              >
+                                {topic}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Year Meta Tags */}
                 <div className={`flex flex-wrap gap-3 ${
                   index % 2 === 0 ? "md:justify-end" : "md:justify-start"
                 }`}>
-                  <span className="flex items-center gap-2 text-xs font-medium text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-3 py-1.5 rounded-full">
-                    <Clock size={14} /> Flexible Pace
+                  <span className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full ${
+                    index === 0
+                      ? 'text-green-600 dark:text-green-300 bg-green-50 dark:bg-green-900/30'
+                      : 'text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30'
+                  }`}>
+                    <Clock size={14} />
+                    {index === 0 ? 'Available Now' : 'Sequential Access'}
                   </span>
-                  <span className="flex items-center gap-2 text-xs font-medium text-green-600 dark:text-green-300 bg-green-50 dark:bg-green-900/30 px-3 py-1.5 rounded-full">
-                    <BookOpen size={14} /> Free Resources
+                  <span className={`flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full ${
+                    index === 0
+                      ? 'text-green-600 dark:text-green-300 bg-green-50 dark:bg-green-900/30'
+                      : 'text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30'
+                  }`}>
+                    <BookOpen size={14} />
+                    {yearData.courses?.length || 0} Courses
                   </span>
                 </div>
               </motion.div>
@@ -353,13 +470,13 @@ export default function RoadmapPage() {
 
       {/* ACTION BUTTONS */}
       <footer className="flex flex-col sm:flex-row gap-4 items-center justify-center no-print">
-        <button 
+        <button
           onClick={() => window.print()}
           className="flex items-center gap-2 px-8 py-3 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-full font-bold hover:scale-105 transition-transform shadow-lg"
         >
           <Download size={18} /> Save as PDF
         </button>
-        
+
         <Link href="/onboarding" className="flex items-center gap-2 text-gray-500 hover:text-blue-600 transition-colors font-medium">
           <ArrowLeft size={16} /> Start Over
         </Link>
@@ -398,9 +515,9 @@ export default function RoadmapPage() {
             {/* Chat Header */}
             <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-4 flex items-center justify-between rounded-t-3xl">
               <div>
-                <h3 className="font-bold text-lg">🤖 AI Mentor</h3>
+                <h3 className="font-bold text-lg">🤖 Bridge AI Mentor</h3>
                 <p className="text-blue-100 text-xs">
-                  Personalized guidance for your {userData.interests} journey
+                  Personalized guidance for your {userData.interests} curriculum
                 </p>
               </div>
               <button
@@ -418,10 +535,10 @@ export default function RoadmapPage() {
                 <div className="flex flex-col items-center justify-center h-full text-center">
                   <MessageSquare size={40} className="text-gray-300 dark:text-gray-600 mb-3" />
                   <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">
-                    Hi! 👋 I&apos;m your AI mentor.
+                    Hi! 👋 I&apos;m your Bridge AI mentor.
                   </p>
                   <p className="text-gray-400 dark:text-gray-500 text-xs">
-                    Ask me anything about your {userData.interests} roadmap!
+                    Ask me anything about your {userData.interests} curriculum!
                   </p>
                 </div>
               ) : (

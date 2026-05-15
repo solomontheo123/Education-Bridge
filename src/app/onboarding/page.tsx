@@ -67,10 +67,10 @@ export default function OnboardingPage() {
       localStorage.setItem("onboardingComplete", "true");
 
       // 3. USE THE ROUTER HERE: 
-      // This automatically moves the user to the Roadmap page
+      // This automatically moves the user to the Curriculum page
       // after a tiny delay so they can see the success animation.
       setTimeout(() => {
-        router.push("/roadmap");
+        router.push("/curriculum");
       }, 1500); 
 
     } else {
@@ -114,9 +114,9 @@ export default function OnboardingPage() {
             We are preparing your path to overcome <span className="font-bold text-blue-600">{formData.barriers.toLowerCase()}</span>.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {/* FIX 4: Changed link to /roadmap */}
-            <Link href="/roadmap" className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold shadow-lg transition-all">
-              View My Roadmap
+            {/* FIX 4: Changed link to /curriculum */}
+            <Link href="/curriculum" className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold shadow-lg transition-all">
+              View My Curriculum
             </Link>
             <button onClick={handleReset} className="inline-flex items-center gap-2 px-8 py-3 bg-gray-100 dark:bg-gray-700 rounded-lg font-semibold transition-all">
               <RotateCcw className="w-5 h-5" /> Start Over

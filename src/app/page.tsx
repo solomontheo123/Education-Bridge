@@ -87,7 +87,7 @@ export default function Home() {
                     alt={selectedCourse.imageAlt}
                     width={384}
                     height={200}
-                    className="w-full h-48 object-cover"
+                    className="w-auto h-auto object-cover"
                   />
                 </div>
 

@@ -2,8 +2,6 @@
 
 import React, { createContext, useContext, useState, useEffect, startTransition } from "react";
 import { OnboardingData } from "@/lib/schema";
-import { supabase } from "@/lib/supabaseClient";
-import { User } from "@supabase/supabase-js";
 
 interface UserContextType {
   userData: OnboardingData;
@@ -12,7 +10,8 @@ interface UserContextType {
   isHydrated: boolean;
   onboardingComplete: boolean;
   setOnboardingComplete: (complete: boolean) => void;
-  user: User | null;
+  userEmail: string | null;
+  setUserEmail: (email: string | null) => void;
   loading: boolean;
 }
 
@@ -28,12 +27,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const [onboardingComplete, setOnboardingComplete] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const saved = localStorage.getItem("onboardingData");
     const savedOnboardingState = localStorage.getItem("onboardingComplete");
+    const savedEmail = localStorage.getItem("eduBridgeEmail");
 
     if (saved) {
       try {
@@ -42,7 +42,6 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         startTransition(() => {
           setUserData(parsed);
         });
-
       } catch (e) {
         console.error("Failed to parse user data", e);
       }
@@ -54,30 +53,29 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       });
     }
 
+    if (savedEmail) {
+      startTransition(() => {
+        setUserEmail(savedEmail);
+      });
+    }
+
     startTransition(() => {
       setIsHydrated(true);
+      setLoading(false);
     });
 
-  }, []);
-
-  // Auth state listener
-  useEffect(() => {
-    const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-      setLoading(false);
+    // Listen for storage changes (e.g., logout from another tab or external changes)
+    const handleStorageChange = () => {
+      const updatedEmail = localStorage.getItem("eduBridgeEmail");
+      startTransition(() => {
+        setUserEmail(updatedEmail);
+      });
     };
 
-    getInitialSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, []);
 
   useEffect(() => {
@@ -86,15 +84,26 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("onboardingComplete", JSON.stringify(onboardingComplete));
     }
   }, [userData, isHydrated, onboardingComplete]);
-   const isComplete = Boolean(
-  userData.education?.trim() && 
-  userData.interests?.trim() && 
-  userData.barriers?.trim()
-);
+
+  const isComplete = Boolean(
+    userData.education?.trim() &&
+    userData.interests?.trim() &&
+    userData.barriers?.trim()
+  );
 
   return (
     <UserContext.Provider
-      value={{ userData, setUserData, isComplete, isHydrated, onboardingComplete, setOnboardingComplete, user, loading }}
+      value={{
+        userData,
+        setUserData,
+        isComplete,
+        isHydrated,
+        onboardingComplete,
+        setOnboardingComplete,
+        userEmail,
+        setUserEmail,
+        loading,
+      }}
     >
       {children}
     </UserContext.Provider>
