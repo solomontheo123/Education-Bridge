@@ -27,16 +27,46 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
    ```bash
    git clone [https://github.com/YOUR_USERNAME/education-bridge.git](https://github.com/YOUR_USERNAME/education-bridge.git)
    cd education-bridge
-2. Install dependencies:
+   ```
 
-$ Bash
-"npm install"
-To run the development server:
+2. **Set up environment variables:**
+   ```bash
+   cp .env.local.template .env.local
+   # Edit .env.local with your actual values
+   ```
 
-$ Bash
-"npm run dev"
-To open the app:
-Navigate to http://localhost:3000 to see the project in action.
+3. **Install Python dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Install Node.js dependencies:**
+   ```bash
+   npm install
+   ```
+
+5. **Set up the database:**
+   - Create a PostgreSQL database
+   - Update `DATABASE_URL` in `.env.local`
+
+6. **Run database migrations:**
+   ```bash
+   # The app will automatically create tables on startup
+   npm run backend
+   ```
+
+7. **Start the development servers:**
+   ```bash
+   # Option 1: Run both frontend and backend
+   npm run both
+
+   # Option 2: Run separately
+   npm run dev          # Frontend on http://localhost:3000
+   npm run backend      # Backend on http://localhost:9000
+   ```
+
+8. **Open the app:**
+   Navigate to http://localhost:3000 to see the project in action.
 
 🏗️ Project Structure
 /src/app: Next.js pages and layouts.
