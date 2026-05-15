@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+asyncpg
+bcrypt
+python-dotenv
+groq
+pydantic
+python-multipart
+PyJWT
+redis
+requests
+google-auth
