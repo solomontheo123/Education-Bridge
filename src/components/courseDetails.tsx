@@ -19,7 +19,7 @@ export default function CourseDetails({ course, onClose }: CourseDetailsProps) {
             alt={course.imageAlt}
             width={400}
             height={300}
-            className="rounded-lg shadow-md w-full h-auto object-cover"
+            className="rounded-lg shadow-md w-auto h-auto object-cover"
           />
         </div>
 

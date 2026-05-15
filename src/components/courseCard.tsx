@@ -24,7 +24,8 @@ export default function CourseCard({ course, onSelectCourse }: CourseCardProps) 
           alt={course.imageAlt}
           width={360}
           height={120}
-          className="rounded-md mb-3 w-full"
+          loading="eager"
+          className="rounded-md mb-3 w-full h-auto"
         />
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-bridge-blue dark:group-hover:text-bridge-blue transition-colors duration-300">
           {course.title}
