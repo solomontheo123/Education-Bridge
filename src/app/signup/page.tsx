@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Mail, ArrowLeft, Eye, EyeOff, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import GoogleAuthButton from "@/components/GoogleAuthButton";
 import { useUser } from "@/context/UserContext";
 
-function LoginPageContent() {
-  const router = useRouter();
+function SignUpPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [step, setStep] = useState<'email' | 'password' | 'verify'>('email');
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,45 +37,30 @@ function LoginPageContent() {
     setError("");
     setIsLoading(true);
 
-    // Input validation
-    if (!email.trim()) {
-      setError("Email is required.");
-      setIsLoading(false);
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email.trim())) {
-      setError("Please enter a valid email address.");
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      // Check if email exists
-      const checkResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:9000'}/auth/check-email`, {
+      // Check if email already exists
+      const checkResponse = await fetch("http://127.0.0.1:9000/auth/check-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+        body: JSON.stringify({ email }),
       });
 
-      if (!checkResponse.ok) {
-        throw new Error("Failed to check email");
-      }
-
-      const data = await checkResponse.json();
-      if (!data.exists) {
-        setError("No account found with this email. Please sign up first.");
-        return;
+      if (checkResponse.ok) {
+        const data = await checkResponse.json();
+        if (data.exists) {
+          setError("An account with this email already exists. Please sign in instead.");
+          return;
+        }
       }
 
       // Generate and send verification code
       const code = generateVerificationCode();
 
-      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:9000'}/auth/send-verification`, {
+      // Send email with verification code
+      const emailResponse = await fetch("http://127.0.0.1:9000/auth/send-verification", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase(), code }),
+        body: JSON.stringify({ email, code }),
       });
 
       if (!emailResponse.ok) {
@@ -121,16 +106,15 @@ function LoginPageContent() {
         const errorData = await verifyResponse.json().catch(() => null);
         throw new Error(errorData?.detail || "Invalid verification code");
       }
-      // Verify password and login
-      const response = await fetch("http://127.0.0.1:9000/auth/login", {
+      // Create account
+      const response = await fetch("http://127.0.0.1:9000/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Login failed");
+        throw new Error("Failed to create account");
       }
 
       const data = await response.json();
@@ -138,11 +122,11 @@ function LoginPageContent() {
       localStorage.setItem("eduBridgeEmail", email.trim().toLowerCase());
       setUserEmail(email.trim().toLowerCase());
 
-      setSuccess("Login successful! Redirecting...");
-      router.push("/curriculum");
+      setSuccess("Account created successfully! Redirecting...");
+      router.push("/dashboard");
     } catch (error) {
-      console.error("Login error:", error);
-      setError("Login failed. Please check your credentials and try again.");
+      console.error("Signup error:", error);
+      setError("Failed to create account. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -160,38 +144,60 @@ function LoginPageContent() {
           Back to Home
         </Link>
 
-        {/* Login Card */}
+        {/* Sign Up Card */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8">
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-              Welcome Back
+              Join Education Bridge
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Sign in to your EduBridge account
+              Create your account to start your learning journey
             </p>
           </div>
 
-          {/* Success Message */}
-          {success && (
-            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
-                <CheckCircle className="w-5 h-5" />
-                <span className="font-medium">{success}</span>
-              </div>
+          {/* Progress Indicator */}
+          <div className="flex items-center justify-center mb-8">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+              step === 'email' ? 'bg-blue-600 text-white' :
+              step === 'password' ? 'bg-blue-600 text-white' :
+              'bg-green-600 text-white'
+            }`}>
+              {step === 'email' ? '1' : step === 'password' ? '2' : <CheckCircle className="w-4 h-4" />}
             </div>
-          )}
+            <div className={`w-12 h-1 mx-2 ${
+              step === 'password' || step === 'verify' ? 'bg-blue-600' : 'bg-gray-300'
+            }`} />
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+              step === 'password' ? 'bg-blue-600 text-white' :
+              step === 'verify' ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-600'
+            }`}>
+              {step === 'verify' ? <CheckCircle className="w-4 h-4" /> : '2'}
+            </div>
+            <div className={`w-12 h-1 mx-2 ${
+              step === 'verify' ? 'bg-green-600' : 'bg-gray-300'
+            }`} />
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+              step === 'verify' ? 'bg-green-600 text-white' : 'bg-gray-300 text-gray-600'
+            }`}>
+              3
+            </div>
+          </div>
 
-          {/* Error Message */}
+          {/* Error/Success Messages */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-              <div className="flex items-center gap-2 text-red-800 dark:text-red-200">
-                <span className="font-medium">{error}</span>
-              </div>
+              <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
             </div>
           )}
 
-          {/* Email Step */}
+          {success && (
+            <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+              <p className="text-green-600 dark:text-green-400 text-sm">{success}</p>
+            </div>
+          )}
+
+          {/* Step 1: Email */}
           {step === 'email' && (
             <div>
               <form onSubmit={handleEmailSubmit} className="space-y-6">
@@ -205,7 +211,7 @@ function LoginPageContent() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                      className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-white"
                       placeholder="you@example.com"
                       required
                     />
@@ -215,50 +221,41 @@ function LoginPageContent() {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
                 >
-                  {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Verifying Email...
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="w-4 h-4" />
-                      Continue with Email
-                    </>
-                  )}
+                  {isLoading ? "Verifying Email..." : "Continue with Email"}
                 </button>
               </form>
-              <div className="relative mt-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+                <div className="relative mt-6">
+                  <div className="absolute inset-0 flex items-center">
+                    <div className="w-full border-t border-gray-300 dark:border-gray-600" />
+                  </div>
+                  <div className="relative flex justify-center text-sm">
+                    <span className="px-2 bg-white dark:bg-slate-800 text-gray-500">Or continue with</span>
+                  </div>
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white dark:bg-slate-800 text-gray-500">Or continue with</span>
+                <div className="mt-4">
+                  <GoogleAuthButton redirectTo="/dashboard" />
                 </div>
-              </div>
-              <div className="mt-4">
-                <GoogleAuthButton redirectTo="/dashboard" />
-              </div>
-            </div>
+          </div>
           )}
 
-          {/* Password Step */}
+          {/* Step 2: Password */}
           {step === 'password' && (
             <form onSubmit={handlePasswordSubmit} className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Password
+                  Create Password
                 </label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-4 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
-                    placeholder="Enter your password"
+                    className="w-full pl-4 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-white"
+                    placeholder="At least 8 characters"
                     required
+                    minLength={8}
                   />
                   <button
                     type="button"
@@ -272,22 +269,14 @@ function LoginPageContent() {
 
               <button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
               >
-                Verify Password & Send Code
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setStep('email')}
-                className="w-full text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm"
-              >
-                ← Back to Email
+                Create Password & Send Code
               </button>
             </form>
           )}
 
-          {/* Verification Step */}
+          {/* Step 3: Verification */}
           {step === 'verify' && (
             <form onSubmit={handleVerificationSubmit} className="space-y-6">
               <div>
@@ -295,13 +284,13 @@ function LoginPageContent() {
                   Verification Code
                 </label>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  We have sent a 6-digit code to <strong>{email}</strong>
+                  Enter the 6-digit code sent to {email}
                 </p>
                 <input
                   type="text"
                   value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                  className="w-full text-center text-2xl font-mono tracking-widest px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-gray-900 dark:text-white"
+                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="w-full text-center text-2xl font-mono tracking-widest px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-slate-700 dark:text-white"
                   placeholder="000000"
                   maxLength={6}
                   required
@@ -310,38 +299,28 @@ function LoginPageContent() {
 
               <button
                 type="submit"
-                disabled={isLoading}
-                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                disabled={isLoading || verificationCode.length !== 6}
+                className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors"
               >
-                {isLoading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Signing In...
-                  </>
-                ) : (
-                  "Verify Code & Sign In"
-                )}
+                {isLoading ? "Creating Account..." : "Verify Code & Sign Up"}
               </button>
 
               <button
                 type="button"
-                onClick={() => setStep('password')}
+                onClick={() => setStep('email')}
                 className="w-full text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 text-sm"
               >
-                ← Back to Password
+                Didn&apos;t receive code? Try again
               </button>
             </form>
           )}
 
-          {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <p className="text-center text-sm text-gray-600 dark:text-gray-400">
-              Do not have an account?{" "}
-              <Link
-                href="/signup"
-                className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
-              >
-                Sign up
+          {/* Sign In Link */}
+          <div className="mt-6 text-center">
+            <p className="text-gray-600 dark:text-gray-400">
+              Already have an account?{" "}
+              <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+                Sign in
               </Link>
             </p>
           </div>
@@ -351,10 +330,10 @@ function LoginPageContent() {
   );
 }
 
-export default function LoginPage() {
+export default function SignUpPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-      <LoginPageContent />
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignUpPageContent />
     </Suspense>
   );
 }
