@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, startTransition } from "react";
 import { OnboardingData } from "@/lib/schema";
+import { bootstrapProfile } from "@/lib/api";
 
 interface UserContextType {
   userData: OnboardingData;
@@ -84,6 +85,38 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem("onboardingComplete", JSON.stringify(onboardingComplete));
     }
   }, [userData, isHydrated, onboardingComplete]);
+
+  useEffect(() => {
+    let active = true;
+
+    const bootstrap = async () => {
+      if (!isHydrated || !userEmail) {
+        return;
+      }
+
+      setLoading(true);
+      try {
+        await bootstrapProfile();
+      } catch (error) {
+        console.error("Profile bootstrap failed", error);
+        localStorage.removeItem("eduBridgeToken");
+        localStorage.removeItem("eduBridgeEmail");
+        if (active) {
+          setUserEmail(null);
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    };
+
+    bootstrap();
+
+    return () => {
+      active = false;
+    };
+  }, [isHydrated, userEmail]);
 
   const isComplete = Boolean(
     userData.education?.trim() &&
