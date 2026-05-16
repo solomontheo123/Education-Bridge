@@ -54,18 +54,20 @@ export default function Dashboard() {
   }, [router,BACKEND_URL]);
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 font-mono">
-      <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mr-4"></div>
-      Syncing Student Records...
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-50 px-6">
+      <div className="inline-flex items-center gap-4 rounded-3xl bg-white px-6 py-4 shadow-lg shadow-slate-200 dark:bg-slate-900 dark:shadow-slate-900/40">
+        <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full"></div>
+        <span className="font-semibold">Syncing student records...</span>
+      </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 p-8">
+    <div className="min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-50 p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         
         <header className="mb-12 flex items-center gap-4">
-          <div className="p-3 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-200">
+          <div className="p-3 bg-blue-600 rounded-2xl text-white shadow-lg shadow-blue-200 dark:shadow-blue-900/40">
             <GraduationCap size={32} />
           </div>
           <div>
@@ -91,48 +93,45 @@ export default function Dashboard() {
         ) : (
           /* ACTUAL ADMITTED STUDENT VIEW */
           <div className="animate-in fade-in slide-in-from-bottom-6 duration-1000">
-            <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200 mb-10 flex flex-wrap gap-8 items-center justify-between">
+            <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-200 mb-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between dark:bg-slate-900 dark:border-slate-800">
               <div>
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Academic Major</p>
-                <h2 className="text-3xl font-black text-slate-900">{profile.major_applied}</h2>
+                <p className="text-xs font-semibold uppercase tracking-[0.32em] text-slate-500 dark:text-slate-400 mb-2">Academic Major</p>
+                <h2 className="text-3xl font-semibold text-slate-900 dark:text-white">{profile.major_applied}</h2>
               </div>
-              <div className="flex gap-4">
-                <div className="bg-blue-50 px-5 py-3 rounded-2xl border border-blue-100">
-                  <p className="text-[10px] font-black text-blue-600 uppercase mb-1">Assigned Path</p>
-                  <p className="font-black text-slate-800">{profile.assigned_track} Year Curriculum</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 dark:border-slate-700 dark:bg-slate-950">
+                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-600 mb-2">Assigned Path</p>
+                  <p className="text-xl font-semibold text-slate-900 dark:text-white">{profile.assigned_track} Year Curriculum</p>
                 </div>
-                <div className="bg-purple-50 px-5 py-3 rounded-2xl border border-purple-100">
-                  <p className="text-[10px] font-black text-purple-600 uppercase mb-1">Cognitive Style</p>
-                  <p className="font-black text-slate-800">{profile.iq_style}</p>
+                <div className="rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 dark:border-slate-700 dark:bg-slate-950">
+                  <p className="text-xs font-semibold uppercase tracking-[0.25em] text-purple-600 mb-2">Cognitive Style</p>
+                  <p className="text-xl font-semibold text-slate-900 dark:text-white">{profile.iq_style}</p>
                 </div>
               </div>
             </div>
 
-            <h2 className="text-2xl font-bold text-slate-900 mb-8">Your Learning Path</h2>
-            <div className={`grid grid-cols-1 md:grid-cols-${profile.assigned_track} gap-6`}>
-              {Array.from({ length: profile.assigned_track }).map((_, i) => (
-                <div key={i} className={`
-                  relative p-8 rounded-[2.5rem] border-2 transition-all duration-500
-                  ${i > 0 ? 'bg-slate-100/50 border-slate-200 opacity-40 grayscale' : 'bg-white border-blue-500 shadow-2xl scale-105 shadow-blue-100'}
-                `}>
-                  <div className="flex justify-between mb-8">
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${i > 0 ? 'text-slate-400' : 'text-blue-600'}`}>
-                      Year 0{i + 1}
+            <h2 className="text-2xl font-semibold text-slate-900 mb-8 dark:text-slate-100">Your Learning Path</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              {Array.from({ length: Math.max(1, profile.assigned_track) }).map((_, i) => (
+                <div key={i} className={`relative p-8 rounded-[2rem] border transition-all duration-500 ${
+                  i > 0 ? 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300' : 'border-blue-500 bg-white shadow-xl text-slate-900 dark:bg-slate-900 dark:text-white'
+                }`}>
+                  <div className="flex justify-between mb-6">
+                    <span className={`text-xs font-semibold uppercase tracking-[0.35em] ${i > 0 ? 'text-slate-500 dark:text-slate-400' : 'text-blue-600'}`}>
+                      Year {i + 1}
                     </span>
                     {i > 0 ? <Lock size={18} className="text-slate-400" /> : <Unlock size={18} className="text-green-500" />}
                   </div>
 
-                  <h3 className="text-2xl font-black text-slate-800 mb-4 leading-tight">
-                    {i > 0 ? 'Advanced Concepts' : 'Academic Foundations'}
-                  </h3>
+                  <h3 className="text-2xl font-semibold mb-4 leading-tight">{i === 0 ? 'Academic Foundations' : 'Advanced Concepts'}</h3>
 
                   {i === 0 ? (
-                    <button className="w-full py-4 bg-blue-600 text-white rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700 shadow-xl shadow-blue-200 transition-all">
+                    <button className="w-full py-4 bg-blue-600 text-white rounded-3xl font-semibold flex items-center justify-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all">
                       <PlayCircle size={22} /> Start Lessons
                     </button>
                   ) : (
-                    <div className="py-3 px-4 bg-slate-200 text-slate-500 text-[10px] font-black rounded-xl text-center uppercase tracking-wider">
-                      Prerequisites Unmet
+                    <div className="rounded-3xl bg-slate-200 px-4 py-3 text-xs font-semibold uppercase tracking-[0.25em] text-slate-600 dark:bg-slate-800 dark:text-slate-400 text-center">
+                      Prerequisites Lock
                     </div>
                   )}
                 </div>
