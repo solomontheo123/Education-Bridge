@@ -45,6 +45,7 @@ def verify_password(password: str, hashed: str) -> bool:
     """Verify a password against its hash"""
     return bcrypt.checkpw(password.encode('utf-8'), hashed.encode('utf-8'))
 
+from backend.auth import create_access_token, get_current_user
 from backend.db import (
     close_db,
     fetch_roadmaps,
@@ -58,6 +59,8 @@ from backend.db import (
     update_user_stats,
     insert_student_profile,
     fetch_student_profile,
+    bootstrap_student_profile,
+    complete_student_module,
     fetch_user_by_email,
     insert_user,
 )
@@ -94,6 +97,14 @@ async def lifespan(app: FastAPI) -> Any:
 
 app = FastAPI(lifespan=lifespan)
 
+from backend.routes.roadmap import router as roadmap_router
+from backend.routes.profile import router as profile_router
+from backend.routes.modules import router as modules_router
+
+app.include_router(roadmap_router)
+app.include_router(profile_router)
+app.include_router(modules_router)
+
 raw_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001")
 allowed_origins = [origin.strip() for origin in raw_origins.split(",") if origin.strip()]
 
@@ -109,10 +120,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-JWT_SECRET = os.getenv("JWT_SECRET")
-if not JWT_SECRET:
-    raise RuntimeError("JWT_SECRET environment variable is required")
 
 ACCESS_TOKEN_EXPIRE_SECONDS = int(os.getenv("ACCESS_TOKEN_EXPIRE_SECONDS", "86400"))
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
@@ -157,47 +164,6 @@ async def metrics():
         "redis_connected": redis_client is not None,
         "timestamp": int(time.time()),
     }
-
-
-def safe_b64_encode(data: bytes) -> str:
-    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
-
-
-def safe_b64_decode(data: str) -> bytes:
-    padding = "=" * (-len(data) % 4)
-    return base64.urlsafe_b64decode(data + padding)
-
-
-def create_access_token(payload: dict[str, Any], expires_in: int = ACCESS_TOKEN_EXPIRE_SECONDS) -> str:
-    payload_copy = payload.copy()
-    payload_copy["exp"] = int(time.time()) + expires_in
-    return jwt.encode(payload_copy, JWT_SECRET, algorithm="HS256")
-
-
-def decode_access_token(token: str) -> dict[str, Any]:
-    try:
-        return jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token expired",
-        ) from None
-    except jwt.InvalidTokenError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-        ) from None
-
-
-def get_current_user(authorization: str | None = Header(None)) -> dict[str, Any]:
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authorization header missing or malformed",
-        )
-
-    token = authorization.split(" ", 1)[1]
-    return decode_access_token(token)
 
 
 verification_codes: dict[str, str] = {}
@@ -536,8 +502,9 @@ async def login(request: LoginRequest) -> TokenResponse:
     if not verify_password(request.password, user['password_hash']):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 
-    # Using the user's email as the stable identifier stored in the JWT sub claim
-    token = create_access_token({"sub": email, "email": email})
+    # Ensure the student profile exists before returning the token
+    await bootstrap_student_profile(pool, email)
+    token = create_access_token({"sub": email, "email": email}, ACCESS_TOKEN_EXPIRE_SECONDS)
     return TokenResponse(access_token=token)
 
 
@@ -606,8 +573,9 @@ async def signup(request: SignUpRequest) -> TokenResponse:
 
     password_hash = hash_password(password)
     await insert_user(pool, email, password_hash)
+    await bootstrap_student_profile(pool, email)
 
-    token = create_access_token({"sub": email, "email": email})
+    token = create_access_token({"sub": email, "email": email}, ACCESS_TOKEN_EXPIRE_SECONDS)
     return TokenResponse(access_token=token)
 
 
@@ -632,8 +600,9 @@ async def google_auth(request: GoogleAuthRequest) -> TokenResponse:
         password_hash = hash_password(os.urandom(16).hex() + "Aa1!")
         await insert_user(pool, email, password_hash)
 
+    await bootstrap_student_profile(pool, email)
     # Using the user's email as the stable identifier stored in the JWT sub claim
-    token = create_access_token({"sub": email, "email": email})
+    token = create_access_token({"sub": email, "email": email}, ACCESS_TOKEN_EXPIRE_SECONDS)
     return TokenResponse(access_token=token, email=email)
 
 

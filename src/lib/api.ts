@@ -1,4 +1,4 @@
-import { OnboardingData } from "./schema";
+import { OnboardingData, RoadmapNode, StudentProfile } from "./schema";
 
 const getAuthToken = () => {
   if (typeof window === "undefined") return null;
@@ -7,7 +7,7 @@ const getAuthToken = () => {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:9000';
 
-const authFetch = async (url: string, options: RequestInit = {}) => {
+export const authFetch = async (url: string, options: RequestInit = {}) => {
   const token = getAuthToken();
   if (!token) {
     throw new Error("No auth token found. Please log in.");
@@ -17,7 +17,7 @@ const authFetch = async (url: string, options: RequestInit = {}) => {
   headers.set("Content-Type", "application/json");
   headers.set("Authorization", `Bearer ${token}`);
 
-  const response = await fetch(`${API_BASE_URL}${url}`, { ...options, headers });
+  const response = await fetch(`${API_BASE_URL}${url}`, { ...options, headers, credentials: "same-origin" });
   if (!response.ok) {
     if (response.status === 401 && typeof window !== "undefined") {
       localStorage.removeItem("eduBridgeToken");
@@ -148,5 +148,22 @@ export async function getUserStats() {
 export async function checkYearAccess(year: number) {
   return authFetch(`http://127.0.0.1:9000/check-year-access/${year}`, {
     method: "POST",
+  });
+}
+
+export async function bootstrapProfile(): Promise<StudentProfile> {
+  return authFetch("/profile/bootstrap", {
+    method: "POST",
+  });
+}
+
+export async function fetchRoadmap(): Promise<RoadmapNode[]> {
+  return authFetch("/roadmap");
+}
+
+export async function completeModule(moduleId: string): Promise<RoadmapNode[]> {
+  return authFetch("/roadmap/complete-module", {
+    method: "POST",
+    body: JSON.stringify({ module_id: moduleId }),
   });
 }
